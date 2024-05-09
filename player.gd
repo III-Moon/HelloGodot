@@ -1,3 +1,4 @@
+class_name Player
 extends CharacterBody2D
 
 enum State {
@@ -8,9 +9,15 @@ enum State {
 	LANDING,
 	WALL_SLIDING,
 	WALL_JUMPING,
+	ATTACK_1,
+	ATTACK_2,
+	ATTACK_3,
 }
 
-const GROUND_STATES := [State.RUNNING, State.IDLE, State.LANDING]
+const GROUND_STATES := [
+	State.RUNNING, State.IDLE, State.LANDING,
+	State.ATTACK_1, State.ATTACK_2, State.ATTACK_3,
+	]
 #每秒两百像素
 const RUN_SPEED := 160.0 
 # 二维空间，正方向朝下，所以是负数
@@ -21,8 +28,11 @@ const WALL_JUMP_VELOCITY := Vector2(300, -280)
 const FLOOR_ACCELERATION := RUN_SPEED / 0.2
 const AIR_ACCELERATION := RUN_SPEED / 0.2
 
+@export var can_combo := false
+
 var default_gravity := ProjectSettings.get("physics/2d/default_gravity") as float
 var is_first_tick := false
+var is_combo_requested := false 
 
 @onready var graphics: Node2D = $Graphics
 @onready var animation_player = $AnimationPlayer
@@ -35,10 +45,14 @@ var is_first_tick := false
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("jump"):
 		jump_request_timer.start()
+	
 	if event.is_action_released("jump"):
 		jump_request_timer.stop()
 		if velocity.y < JUMP_VELOCITY / 2:
 			velocity.y = JUMP_VELOCITY / 2
+	
+	if event.is_action_pressed("attack") and can_combo:
+		is_combo_requested = true
 
 func tick_physics(state: State, delta: float) -> void:
 	match state:
@@ -61,7 +75,8 @@ func tick_physics(state: State, delta: float) -> void:
 				graphics.scale.x = get_wall_normal().x
 			else:
 				move(default_gravity, delta)
-	
+		State.ATTACK_1,State.ATTACK_2,State.ATTACK_3:
+			stand(default_gravity, delta)
 	is_first_tick = false
 
 func move(gravity: float, delta: float) -> void:
@@ -89,19 +104,29 @@ func get_next_state(state: State) -> State:
 	var direction := Input.get_axis("move_left", "move_right")
 	# 静止不动
 	var is_still := is_zero_approx(direction) and is_zero_approx(velocity.x)
+	
 	# 如果在地面并且剩余时间大于0则说明能够起跳
 	var can_jump = is_on_floor() or coyote_timer.time_left > 0
 	var should_jump = can_jump and jump_request_timer.time_left > 0
 	if should_jump:
 		return State.JUMP
 	
+	if state in GROUND_STATES and not is_on_floor():
+		return State.FALL
+	
 	match state:
 		State.IDLE:
 			if not is_on_floor():
 				return State.FALL
+			if Input.is_action_just_pressed("attack"):
+				return State.ATTACK_1
 			if not is_still:
 				return State.RUNNING
 		State.RUNNING:
+			if not is_on_floor():
+				return State.FALL
+			if Input.is_action_just_pressed("attack"):
+				return State.ATTACK_1
 			if is_still:
 				return State.IDLE
 		State.JUMP:
@@ -129,6 +154,16 @@ func get_next_state(state: State) -> State:
 				return State.WALL_SLIDING
 			if velocity.y >= 0:
 				return State.FALL
+		State.ATTACK_1:
+			if not animation_player.is_playing():
+				return State.ATTACK_2 if is_combo_requested else State.IDLE
+		State.ATTACK_2:
+			if not animation_player.is_playing():
+				return State.ATTACK_3 if is_combo_requested else State.IDLE
+		State.ATTACK_3:
+			if not animation_player.is_playing():
+				return State.IDLE
+		
 	return state
 
 
@@ -165,5 +200,17 @@ func transition_state(from: State, to: State) -> void:
 			# 判断wall法线方向，帮助之后蹬墙跳是向左还是向右
 			velocity.x *= get_wall_normal().x
 			jump_request_timer.stop()
+		State.ATTACK_1:
+			animation_player.play("attack_1")
+			#等到下一个can_combo的关键帧（动画中创建
+			is_combo_requested = false
+		State.ATTACK_2:
+			animation_player.play("attack_2")
+			#同上
+			is_combo_requested = false
+		State.ATTACK_3:
+			animation_player.play("attack_3")
+			#同上
+			is_combo_requested = false
 	
 	is_first_tick = true
