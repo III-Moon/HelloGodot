@@ -579,6 +579,7 @@ _data = {
 }
 
 [node name="Player" type="CharacterBody2D"]
+collision_layer = 2
 script = ExtResource("1_ps5k6")
 
 [node name="Graphics" type="Node2D" parent="."]

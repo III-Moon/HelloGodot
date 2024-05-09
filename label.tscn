@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://cga73gadolaqx"]
+[gd_scene load_steps=9 format=3 uid="uid://cga73gadolaqx"]
 
 [ext_resource type="Texture2D" uid="uid://d8lfdaeppmue" path="res://Legacy-Fantasy - High Forest 2.3/Assets/Tree-Assets.png" id="1_8k1t8"]
 [ext_resource type="Script" path="res://label.gd" id="1_f2fi0"]
 [ext_resource type="PackedScene" uid="uid://culh1h8p45f37" path="res://player.tscn" id="2_m4jq3"]
 [ext_resource type="Texture2D" uid="uid://h5np6qrs8vvh" path="res://Legacy-Fantasy - High Forest 2.3/Background/Background.png" id="4_7lsrk"]
 [ext_resource type="Texture2D" uid="uid://cs1tw8y858hmx" path="res://Legacy-Fantasy - High Forest 2.3/Trees/Background.png" id="5_np7al"]
+[ext_resource type="PackedScene" uid="uid://docg8hbrvdocg" path="res://enemies/boar.tscn" id="6_q6r5w"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_b1qev"]
 texture = ExtResource("1_8k1t8")
@@ -777,3 +778,6 @@ position = Vector2(329, 28)
 texture = ExtResource("1_8k1t8")
 region_enabled = true
 region_rect = Rect2(210, 197, 124, 86)
+
+[node name="Boar" parent="." instance=ExtResource("6_q6r5w")]
+position = Vector2(359, 121)
